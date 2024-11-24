@@ -1,0 +1,6 @@
+name,url
+yvan_jarvispore.h5,https://huggingface.co/YvanRLD/Jarvis_last/resolve/main/best_model_04_11_08_15.h5
+florent_resnet18.pth,https://drive.usercontent.google.com/download?id=1mVnkxKWXumautzJiOKmsEPRCey-WC6Li&export=download&confirm=t&uuid=7f9086cf-9fc2-451c-a2ec-f8ae16b9bd92
+heuzef_efficientnetb1_010.keras,https://champi.heuzef.com/get-artifact?path=heuzef_efficientnetb1_010_artifacts%2Fdata%2Fmodel.keras&run_uuid=93ce2df782da48108f127f3e6c4adb8b
+vik_resnet50.h5,https://drive.usercontent.google.com/download?id=1rdEKCDxAtWPiQp3o5oGs5tyGL2ms6Tb5&export=download&authuser=0&confirm=t&uuid=23392097-ec56-4f76-8d3d-291c3c66c1ea&at=AENtkXb7I5Wks5pUtucYuq_ekRa1%3A1730714027974
+heuzef_lenet_001.keras,https://champi.heuzef.com/get-artifact?path=heuzef_lenet_001_artifacts%2Fdata%2Fmodel.keras&run_uuid=27ca3b31dbe1447d9fb7e0f7c6903cda

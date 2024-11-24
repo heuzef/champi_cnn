@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="/localhost/css/bootstrap.min.css">
+  </head>
+
+  <body>
+
+    <div id="maincontent">
+      
+    </div>
+
+    <script src="/localhost/js/jquery-3.1.1.min.js"></script>
+    <script src="/localhost/js/jquery.csv.min.js"></script>
+    
+    <script>
+      
+      $(function(){
+        $.get(
+          "/localhost/jsobservation-classification.json",
+          (resp) => {
+            
+            var aggregatedData = {}
+            var data = resp.data
+            for(var i = 0 ; i < data.length ; i++){
+
+              if(aggregatedData[data[i][5]] == undefined){
+                aggregatedData[data[i][5]] = {
+                  family: data[i][5],
+                  count: 0,
+                  imagesIds: []
+                }
+              }
+
+              aggregatedData[data[i][5]].count++
+              aggregatedData[data[i][5]].imagesIds.push(data[i][3])
+
+            }
+
+            var sortedArray = []
+            for( var j in aggregatedData){
+              sortedArray.push(aggregatedData[j])
+            }
+
+            sortedArray.sort((a,b)=>b.count-a.count)
+            showfamilys(sortedArray)
+
+          }
+        )
+      })
+
+      function showfamilys(familys){
+
+        for(var i = 0 ; i < familys.length && i < 20; i++){
+
+          var familyLine = $('<div></div>')
+          familyLine.append('<div class="card mb-3"><h4>'+familys[i].family+': '+familys[i].count+' observations</h4></div>')
+
+          var familyImages = $('<div class="imagesScroller"></div>')
+          for(var j = 0 ; j < familys[i].imagesIds.length && j < 15 ; j++){
+            familyImages.append('<div class="familyImage"><img class="img-thumbnail" src="https://images.mushroomobserver.org/960/'+familys[i].imagesIds[j]+'.jpg"/></div>')
+          }
+          familyLine.append(familyImages)
+
+          $('#maincontent').append(familyLine)
+        }
+
+      }
+
+
+    </script>
+
+    <style>
+
+      .familyImage img{
+        max-width: 200px;
+        max-height: 200px;
+        margin: 5px;
+      }
+
+      .imagesScroller {
+          display: flex;
+          overflow: scroll;
+      }
+
+    </style>
+  </body>
+
+</html>

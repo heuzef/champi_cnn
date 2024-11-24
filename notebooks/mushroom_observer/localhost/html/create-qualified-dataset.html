@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/notebooks/mushroom_observer/localhost/css/bootstrap.min.css">
+  </head>
+
+  <body>
+
+    <div id="maincontent">
+      <div class="content-head">
+        <div select-container>
+          <select></select>
+        </div>
+        <div class="selected-specie-info">
+
+        </div>
+        <div>
+          <button class="btn btn-success" onclick="saveSelection()">Valider</button>
+        </div>
+      </div>
+      <div class="content-body">
+
+      </div>
+    </div>
+
+    <script src="/notebooks/mushroom_observer/localhost/js/jquery-3.1.1.min.js"></script>
+    <script src="/notebooks/mushroom_observer/localhost/js/jquery.csv.min.js"></script>
+    <script src="https://kit.fontawesome.com/80dedabb6a.js" crossorigin="anonymous"></script>
+    
+    <script>
+      
+      var aggregatedData = {}
+      var sortedArray = []
+      $(function(){
+        $.get(
+          "/notebooks/mushroom_observer/dataset-mushroom-observer/images-observation-filtered.json",
+          (resp) => {
+            
+            var data = resp.data
+            for(var i = 0 ; i < data.length ; i++){
+
+              var specieId = data[i][0]
+              var specieName = data[i][1]
+              var observationId = data[i][3]
+              if(aggregatedData[specieId] == undefined){
+                aggregatedData[specieId] = {
+                  name: specieName,
+                  id: specieId,
+                  countImages: 0,
+                  observations: {}
+                }
+              }
+
+              if(aggregatedData[specieId].observations[observationId] == undefined){
+                aggregatedData[specieId].observations[observationId] = []
+              }
+
+
+
+              aggregatedData[specieId].countImages++
+              aggregatedData[specieId].observations[observationId].push(data[i][5])
+
+            }
+            
+            
+            for( var j in aggregatedData){
+              sortedArray.push(aggregatedData[j])
+            }
+
+            sortedArray = sortedArray.filter((a)=>a.countImages >= 500)
+            sortedArray.sort((a,b)=>a.name.localeCompare(b.name))
+
+            showSelect()
+          }
+        )
+      })
+
+      function showSelect(){
+      
+        for(var i = 0 ; i < sortedArray.length ; i++){
+          var option = $('<option></option>')
+          option.text(sortedArray[i].name)
+          option.attr('value', sortedArray[i].id)
+          $('#maincontent select').append(option)
+        }
+
+        $('#maincontent select').change(() => {
+          showPage($('#maincontent select').val())
+        })
+
+        showPage($('#maincontent select').val())
+      }
+
+      function showPage(specieId){
+
+        $.get(
+          "/notebooks/mushroom_observer/dataset-mushroom-observer/qualified-dataset/specie-id-"+specieId+".json?t="+Date.now()).always( (resp) => {
+            
+            var reviewdImagesIds = []
+            var nbSelection = nbExclusion = 0
+            if(resp.upSelection != undefined){
+              reviewdImagesIds = resp.upSelection.concat(resp.downSelection.concat(resp.exclusion))
+              nbSelection = resp.upSelection.length+resp.downSelection.length
+              nbExclusion = resp.exclusion.length
+            }
+            specieData = aggregatedData[specieId]
+
+            var nameLine = $('<div></div>')
+            $('.selected-specie-info').html('<div class="card mb-3"><h4>'+specieData.name+' (id:'+specieData.id
+              +'): selectionnées:'+nbSelection
+              +', exclues:'+nbExclusion
+              +', non qualifiées:'+ ( specieData.countImages - reviewdImagesIds.length)
+              +', total:'+specieData.countImages+' </h4></div>')
+
+
+            imagesToDisplay = []
+            var idx = 0
+            getImagesToDisplay:
+            while(idx < specieData.countImages){
+              for(var observationId in specieData.observations){
+                if(specieData.observations[observationId][idx] != undefined && reviewdImagesIds.indexOf(specieData.observations[observationId][idx].toString()) == -1){
+                  imagesToDisplay.push(specieData.observations[observationId][idx])
+                }
+                if(imagesToDisplay.length == 15){
+                  break getImagesToDisplay
+                }
+              }
+              idx++
+            }
+
+            var nameImages = $('<div class="imagesScroller"></div>')
+            for(var i = 0 ; i < 3 ; i++){
+              var rowImages = $('<div class="imagesLines"></div>')
+              for(var j = 0 ; j < 5 ; j++){
+                var imgIdx = i*5 + j
+                rowImages.append('<div class="nameImage" image-id="'+imagesToDisplay[imgIdx]+'"><div class="img-container"><img class="img-thumbnail" src="https://images.mushroomobserver.org/960/'+imagesToDisplay[imgIdx]+'.jpg"/></div></div>')
+              }
+              nameImages.append(rowImages)
+            }
+            nameLine.append(nameImages)
+
+            $('#maincontent .content-body').html(nameLine)
+            $('.nameImage').append('<div class="action-icons"><div class="up"><i class="fas fa-arrow-down"></i></div><div class="down"><i class="fas fa-arrow-up"></i></div></div>')
+
+            $('.down').click((ev) => {
+              $(ev.currentTarget).toggleClass('selected')
+              $(ev.currentTarget).closest('.action-icons').find('.up').removeClass('selected')
+            })
+            $('.up').click((ev) => {
+              $(ev.currentTarget).toggleClass('selected')
+              $(ev.currentTarget).closest('.action-icons').find('.down').removeClass('selected')
+            })
+          })
+
+      }
+
+      function saveSelection(){
+
+        var data = {
+          upSelection: [],
+          downSelection: [],
+          exclusion: []
+        }
+
+        $('.nameImage').each((idx, elem)=>{
+            if($(elem).find('.up').hasClass('selected')){
+              data.upSelection.push($(elem).attr("image-id"))
+            }else{
+              if($(elem).find('.down').hasClass('selected')){
+                data.downSelection.push($(elem).attr("image-id"))
+              }else{
+                data.exclusion.push($(elem).attr("image-id"))
+              }
+            }
+        })
+
+        $.ajax({
+          type: 'POST',
+          dataType: 'json',
+          url:'/notebooks/mushroom_observer/localhost/cgi-bin/save-dataset-qualification.py?specieId='+$('#maincontent select').val(),
+          complete: () => {
+            showPage($('#maincontent select').val())
+          },
+          data: {jsonData: JSON.stringify(data)}
+      })
+      }
+
+
+    </script>
+
+    <style>
+
+      .imagesLines {
+          display: flex;
+      }
+      .nameImage {
+          flex: 1;
+          height: 31vh;
+      }
+
+      img{
+        max-width: 20vw !important;
+        max-height: 31vh !important;
+      }
+      .img-container {
+          width: 20vw;
+          height: 31vh;
+      }
+      .content-head {
+          display: flex;
+      }
+      .img-container {
+          display: flex;
+          align-items: center;
+          flex-direction: column;
+      }
+      .action-icons {
+          position: relative;
+          bottom: 31vh;
+          height: 31vh;
+          width: 20vw;
+      }
+      .up, .down {
+        
+          height: 15.5vh;
+          color: rgba(255, 255, 255, .5);
+          text-align: center;
+          font-size: 0;
+          padding-top: 2vh;
+      }
+
+      .up:hover, .down:hover, .up.selected, .down.selected{
+          background-color: rgba(0, 100, 0, .7);
+          font-size: 7vh;
+      }
+
+      div#maincontent {
+          overflow: hidden;
+      }
+
+      .selected-specie-info {
+          flex: 1;
+      }
+
+    </style>
+  </body>
+
+</html>

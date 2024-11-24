@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="/notebooks/mushroom_observer/localhost/css/bootstrap.min.css">
+  </head>
+
+  <body>
+
+    <div id="maincontent">
+      
+    </div>
+
+    <script src="/notebooks/mushroom_observer/localhost/js/jquery-3.1.1.min.js"></script>
+    <script src="/notebooks/mushroom_observer/localhost/js/jquery.csv.min.js"></script>
+    
+    <script>
+      
+      $(function(){
+        $.get(
+          "/notebooks/mushroom_observer/dataset-mushroom-observer/observation-classification.json",
+          (resp) => {
+            
+            var aggregatedData = {}
+            var data = resp.data
+            for(var i = 0 ; i < data.length ; i++){
+
+              if(aggregatedData[data[i][4]] == undefined){
+                aggregatedData[data[i][4]] = {
+                  order: data[i][4],
+                  count: 0,
+                  imagesIds: []
+                }
+              }
+
+              aggregatedData[data[i][4]].count++
+              aggregatedData[data[i][4]].imagesIds.push(data[i][3])
+
+            }
+
+            var sortedArray = []
+            for( var j in aggregatedData){
+              sortedArray.push(aggregatedData[j])
+            }
+
+            sortedArray.sort((a,b)=>b.count-a.count)
+            showOrders(sortedArray)
+
+          }
+        )
+      })
+
+      function showOrders(orders){
+
+        for(var i = 0 ; i < orders.length && i < 20; i++){
+
+          var orderLine = $('<div></div>')
+          orderLine.append('<div class="card mb-3"><h4>'+orders[i].order+': '+orders[i].count+' observations</h4></div>')
+
+          var orderImages = $('<div class="imagesScroller"></div>')
+          for(var j = 0 ; j < orders[i].imagesIds.length && j < 20 ; j++){
+            orderImages.append('<div class="orderImage"><img class="img-thumbnail" src="https://images.mushroomobserver.org/960/'+orders[i].imagesIds[j]+'.jpg"/></div>')
+          }
+          orderLine.append(orderImages)
+
+          $('#maincontent').append(orderLine)
+        }
+
+      }
+
+
+    </script>
+
+    <style>
+
+      .orderImage img{
+        max-width: 200px;
+        max-height: 200px;
+        margin: 5px;
+      }
+
+      .imagesScroller {
+          display: flex;
+          overflow: scroll;
+      }
+
+    </style>
+  </body>
+
+</html>

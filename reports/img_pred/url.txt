@@ -1,0 +1,10 @@
+EffB1
+939 : https://upload.wikimedia.org/wikipedia/commons/c/cd/Mycena_haematopus_64089.jpg
+271 : https://upload.wikimedia.org/wikipedia/commons/4/4a/Flammulina_velutipes_IMG_1038.jpg
+373 : https://upload.wikimedia.org/wikipedia/commons/1/11/Amanita_muscaria_After_Rain.jpg
+373 : https://www.mycodb.fr/photos/Amanita_muscaria_2005_ov_2.jpg
+
+Lenet :
+373 : https://www.mycodb.fr/photos/Amanita_muscaria_2005_ov_2.jpg
+373 : https://upload.wikimedia.org/wikipedia/commons/1/11/Amanita_muscaria_After_Rain.jpg
+63454 : https://upload.wikimedia.org/wikipedia/commons/a/a8/Boletus_rex-veris_42967.jpg

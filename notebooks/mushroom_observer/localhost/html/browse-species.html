@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="/notebooks/mushroom_observer/localhost/css/bootstrap.min.css">
+  </head>
+
+  <body>
+
+    <div id="maincontent">
+      
+    </div>
+
+    <script src="/notebooks/mushroom_observer/localhost/js/jquery-3.1.1.min.js"></script>
+    <script src="/notebooks/mushroom_observer/localhost/js/jquery.csv.min.js"></script>
+    
+    <script>
+      
+      $(function(){
+        $.get(
+          "/notebooks/mushroom_observer/dataset-mushroom-observer/observation-name.json",
+          (resp) => {
+            
+            var aggregatedData = {}
+            var data = resp.data
+            for(var i = 0 ; i < data.length ; i++){
+
+              if(aggregatedData[data[i][4]] == undefined){
+                aggregatedData[data[i][4]] = {
+                  name: data[i][4],
+                  count: 0,
+                  imagesIds: []
+                }
+              }
+
+              aggregatedData[data[i][4]].count++
+              aggregatedData[data[i][4]].imagesIds.push(data[i][3])
+
+            }
+
+            var sortedArray = []
+            for( var j in aggregatedData){
+              sortedArray.push(aggregatedData[j])
+            }
+
+            sortedArray.sort((a,b)=>b.count-a.count)
+            showNames(sortedArray)
+
+          }
+        )
+      })
+
+      function showNames(names){
+
+        for(var i = 0 ; i < names.length && i < 100; i++){
+
+          var nameLine = $('<div></div>')
+          nameLine.append('<div class="card mb-3"><h4>'+names[i].name+': '+names[i].count+' observations</h4></div>')
+
+          var nameImages = $('<div class="imagesScroller"></div>')
+          for(var j = 0 ; j < names[i].imagesIds.length && j < 3 ; j++){
+            nameImages.append('<div class="nameImage"><img class="img-thumbnail" src="https://images.mushroomobserver.org/960/'+names[i].imagesIds[j]+'.jpg"/></div>')
+          }
+          nameLine.append(nameImages)
+
+          $('#maincontent').append(nameLine)
+        }
+
+      }
+
+
+    </script>
+
+    <style>
+
+      .nameImage img{
+        max-width: 200px;
+        max-height: 200px;
+        margin: 5px;
+      }
+
+      .imagesScroller {
+          display: flex;
+          overflow: scroll;
+      }
+
+    </style>
+  </body>
+
+</html>

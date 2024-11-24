@@ -1,0 +1,13 @@
+[Unit]
+Description=MLflow Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStartPre=/bin/sleep 30
+ExecStart=/data/mlflow-server.sh
+
+[Install]
+WantedBy=multi-user.target

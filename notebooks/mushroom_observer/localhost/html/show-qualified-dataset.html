@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/localhost/css/bootstrap.min.css">
+  </head>
+
+  <body>
+
+    <div id="maincontent">
+      <div class="content-head">
+        <div select-container>
+          <select class="sepcies-selector"></select>
+        </div>
+        <div class="selected-specie-info">
+
+        </div>
+        <div>
+          <select class="display-type-selector">
+            <option value="selected">Sélectionnées</option>
+            <option value="excluded">Exclues</option>
+          </select>
+        </div>
+      </div>
+      <div class="content-body">
+
+      </div>
+    </div>
+
+    <script src="/localhost/js/jquery-3.1.1.min.js"></script>
+    <script src="/localhost/js/jquery.csv.min.js"></script>
+    <script src="https://kit.fontawesome.com/80dedabb6a.js" crossorigin="anonymous"></script>
+    
+    <script>
+      
+      var aggregatedData = {}
+      var sortedArray = []
+      $(function(){
+        $.get(
+          "/localhost/js/images-observation-filtered.json",
+          (resp) => {
+            
+            var data = resp.data
+            for(var i = 0 ; i < data.length ; i++){
+
+              var specieId = data[i][0]
+              var specieName = data[i][1]
+              var observationId = data[i][3]
+              if(aggregatedData[specieId] == undefined){
+                aggregatedData[specieId] = {
+                  name: specieName,
+                  id: specieId,
+                  countImages: 0,
+                  observations: {}
+                }
+              }
+
+              if(aggregatedData[specieId].observations[observationId] == undefined){
+                aggregatedData[specieId].observations[observationId] = []
+              }
+
+
+
+              aggregatedData[specieId].countImages++
+              aggregatedData[specieId].observations[observationId].push(data[i][5])
+
+            }
+            
+            
+            for( var j in aggregatedData){
+              sortedArray.push(aggregatedData[j])
+            }
+
+            sortedArray = sortedArray.filter((a)=>a.countImages >= 500)
+            sortedArray.sort((a,b)=>a.name.localeCompare(b.name))
+
+            showSelect()
+          }
+        )
+      })
+
+      function showSelect(){
+      
+        for(var i = 0 ; i < sortedArray.length ; i++){
+          var option = $('<option></option>')
+          option.text(sortedArray[i].name)
+          option.attr('value', sortedArray[i].id)
+          $('#maincontent select.sepcies-selector').append(option)
+        }
+
+        $('#maincontent select').change(() => {
+          showPage($('#maincontent select.sepcies-selector').val())
+        })
+        
+
+        showPage($('#maincontent select.sepcies-selector').val())
+      }
+
+      function showPage(specieId){
+
+        $.get(
+          "/localhost/js/qualified-dataset/specie-id-"+specieId+".json").always( (resp) => {
+            
+            var reviewdImagesIds = []
+            var nbSelection = nbExclusion = 0
+            imagesToDisplay = []
+            if(resp.upSelection != undefined){
+              reviewdImagesIds = resp.upSelection.concat(resp.downSelection.concat(resp.exclusion))
+              nbSelection = resp.upSelection.length+resp.downSelection.length
+              nbExclusion = resp.exclusion.length
+
+              if($('.display-type-selector').val() == "selected"){
+                imagesToDisplay = resp.upSelection.concat(resp.downSelection)
+              }else{
+                imagesToDisplay = resp.exclusion
+              }
+              
+            }
+            specieData = aggregatedData[specieId]
+
+            
+
+            var nameLine = $('<div></div>')
+            $('.selected-specie-info').html('<div class="card mb-3"><h4>'+specieData.name+' (id:'+specieData.id
+              +'): selectionnées:'+nbSelection
+              +', exclues:'+nbExclusion
+              +', non qualifiées:'+ ( specieData.countImages - reviewdImagesIds.length)
+              +', total:'+specieData.countImages+' </h4></div>')
+
+
+
+            var nameImages = $('<div class="imagesScroller"></div>')
+            for(var i = 0 ; i <= (imagesToDisplay.length / 5) ; i++){
+              var rowImages = $('<div class="imagesLines"></div>')
+              for(var j = 0 ; j < 5 ; j++){
+                var imgIdx = i*5 + j
+                if(imagesToDisplay[imgIdx] == undefined){
+                  continue
+                }
+                rowImages.append('<div class="nameImage" image-id="'+imagesToDisplay[imgIdx]+'"><div class="img-container"><img class="img-thumbnail" src="https://images.mushroomobserver.org/960/'+imagesToDisplay[imgIdx]+'.jpg"/></div></div>')
+              }
+              nameImages.append(rowImages)
+            }
+            nameLine.append(nameImages)
+
+            $('#maincontent .content-body').html(nameLine)
+            $('.nameImage').append('<div class="action-icons"><div class="up"><i class="fas fa-arrow-down"></i></div><div class="down"><i class="fas fa-arrow-up"></i></div></div>')
+
+           
+          })
+
+      }
+
+      function saveSelection(){
+
+        var data = {
+          upSelection: [],
+          downSelection: [],
+          exclusion: []
+        }
+
+        $('.nameImage').each((idx, elem)=>{
+            if($(elem).find('.up').hasClass('selected')){
+              data.upSelection.push($(elem).attr("image-id"))
+            }else{
+              if($(elem).find('.down').hasClass('selected')){
+                data.downSelection.push($(elem).attr("image-id"))
+              }else{
+                data.exclusion.push($(elem).attr("image-id"))
+              }
+            }
+        })
+
+        $.ajax({
+          type: 'POST',
+          dataType: 'json',
+          url:'/localhost/cgi-bin/save-dataset-qualification.py?specieId='+$('#maincontent select').val(),
+          complete: () => {
+            showPage($('#maincontent select').val())
+          },
+          data: {jsonData: JSON.stringify(data)}
+      })
+      }
+
+
+    </script>
+
+    <style>
+
+      .imagesLines {
+          display: flex;
+      }
+      .nameImage {
+          flex: 1;
+          height: 31vh;
+      }
+
+      img{
+        max-width: 20vw !important;
+        max-height: 31vh !important;
+      }
+      .img-container {
+          width: 20vw;
+          height: 31vh;
+      }
+      .content-head {
+          display: flex;
+      }
+      .img-container {
+          display: flex;
+          align-items: center;
+          flex-direction: column;
+      }
+      .action-icons {
+          position: relative;
+          bottom: 31vh;
+          height: 31vh;
+          width: 20vw;
+      }
+      .up, .down {
+        
+          height: 15.5vh;
+          color: rgba(255, 255, 255, .5);
+          text-align: center;
+          font-size: 0;
+          padding-top: 2vh;
+      }
+
+      div#maincontent {
+          overflow: hidden;
+      }
+
+      .selected-specie-info {
+          flex: 1;
+      }
+
+    </style>
+  </body>
+
+</html>

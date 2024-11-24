@@ -1,0 +1,38 @@
+#  System
+os
+time
+
+# Streamlit
+streamlit
+streamlit-extras
+
+# Jupyter
+ipykernel
+ipython
+
+# MLflow
+mlflow
+
+# ML
+numpy
+pandas
+scikit-learn
+statsmodels
+
+# Dataviz
+matplotlib
+seaborn
+plotly
+PIL
+
+# Webscraping
+beautifulsoup4
+lxml
+
+# DL/CV
+opencv-contrib-python
+tensorflow
+keras
+torch
+torchvision
+transformers
